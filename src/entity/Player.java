@@ -8,22 +8,28 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 
-
-
-
 public class Player extends Entity {
     GamePanel gamePanel;
     KeyHandler keyH;
     public final int screenX;
     public final int screenY;
+    int hasKey = 0;
 
     public Player(GamePanel gamePanel, KeyHandler keyH) {
 
         this.gamePanel = gamePanel;
         this.keyH = keyH;
 
-        screenX = gamePanel.screenWidth/2 - (gamePanel.tileSize)/2;
-        screenY = gamePanel.screenHeight/2 - (gamePanel.tileSize)/2;
+        screenX = gamePanel.screenWidth / 2 - (gamePanel.tileSize) / 2;
+        screenY = gamePanel.screenHeight / 2 - (gamePanel.tileSize) / 2;
+
+        solidArea = new Rectangle();
+        solidArea.x = 8;
+        solidArea.y = 16;
+        solidAreaDefaultX = solidArea.x;
+        SolidAreaDefaultY = solidArea.y;
+        solidArea.width = 32;
+        solidArea.height = 32;
 
         setDefaultValues();
         getPlayerImage();
@@ -55,33 +61,82 @@ public class Player extends Entity {
 
     public void update() {
 
-        if (keyH.upPressed == true || keyH.downPressed == true || keyH.leftPressed || keyH.rightPressed){
+        if (keyH.upPressed == true || keyH.downPressed == true || keyH.leftPressed || keyH.rightPressed) {
             if (keyH.upPressed == true) {
                 direction = "up";
-                worldY -= speed;
             } else if (keyH.downPressed == true) {
                 direction = "down";
-                worldY += speed;
             } else if (keyH.leftPressed == true) {
                 direction = "left";
-                worldX -= speed;
             } else if (keyH.rightPressed == true) {
                 direction = "right";
-                worldX += speed;
             }
+
+            //CHECK TILE COLLISION
+            collisionOn = false;
+            gamePanel.cChecker.checkTile(this);
+
+            // Check object collision
+            int objIndex = gamePanel.cChecker.checkObject(this, true);
+            pickUpObject(objIndex);
+
+            // IF COLLISION IS FALSE PLAYER CAN MOVE
+            if (collisionOn == false) {
+                switch (direction) {
+                    case "up":
+                        worldY -= speed;
+                        break;
+                    case "down":
+                        worldY += speed;
+                        break;
+                    case "left":
+                        worldX -= speed;
+                        break;
+                    case "right":
+                        worldX += speed;
+                        break;
+                }
+            }
+
             spriteCounter++;
-            if (spriteCounter > 10){
+            if (spriteCounter > 10) {
                 if (spriteNum == 1) {
                     spriteNum = 2;
-                }
-                else if(spriteNum ==2){
+                } else if (spriteNum == 2) {
                     spriteNum = 1;
                 }
                 spriteCounter = 0;
             }
+        } else {
+            spriteNum = 1;
         }
 
 
+    }
+
+    public void pickUpObject(int i) {
+        if (i != 999) {
+            String objectName = gamePanel.obj[i].name;
+
+            switch (objectName) {
+                case "Key":
+                    hasKey++;
+                    gamePanel.obj[i] = null;
+                    System.out.println("Key: " + hasKey);
+                    break;
+                case "Door":
+                    if (hasKey > 0) {
+                        gamePanel.obj[i] = null;
+                        hasKey--;
+                    }
+                    System.out.println("Key: " + hasKey);
+                    break;
+                case "Boots":
+                    speed += 2;
+                    gamePanel.obj[i] = null;
+                    break;
+            }
+        }
     }
 
     public void draw(Graphics2D g2) {
@@ -115,10 +170,10 @@ public class Player extends Entity {
                 }
                 break;
             case "right":
-                if (spriteNum == 1){
+                if (spriteNum == 1) {
                     image = right1;
                 }
-                if (spriteNum == 2){
+                if (spriteNum == 2) {
                     image = right2;
                 }
                 break;
